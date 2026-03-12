@@ -101,32 +101,38 @@ function App() {
   )
 
   return (
-    <div className="app-layout">
-      <ControlPanel config={config} onChange={applyConfig} onExportStl={() => exportModelAsStl(config)} />
+    <div className="app-root">
+      <div className="orb orb-1" />
+      <div className="orb orb-2" />
+      <div className="orb orb-3" />
 
-      <main className="viewport-column">
-        <header>
-          <h2>Live 3D Preview</h2>
-          <p>{modelStats}</p>
-        </header>
+      <div className="app-layout">
+        <ControlPanel config={config} onChange={applyConfig} onExportStl={() => exportModelAsStl(config)} />
 
-        <DesignerCanvas config={config} />
+        <main className="viewport-column">
+          <header>
+            <h2>Live 3D Preview</h2>
+            <p>{modelStats}</p>
+          </header>
 
-        <CloudPanel
-          enabled={enabled}
-          user={user}
-          authLoading={authLoading}
-          models={models}
-          cloudLoading={cloudLoading}
-          cloudError={cloudError}
-          onSignIn={signInWithGoogle}
-          onSignOut={signOut}
-          onSave={handleCloudSave}
-          onLoad={handleLoadModel}
-          onDelete={handleDelete}
-          onRefresh={refreshModels}
-        />
-      </main>
+          <DesignerCanvas config={config} />
+
+          <CloudPanel
+            enabled={enabled}
+            user={user}
+            authLoading={authLoading}
+            models={models}
+            cloudLoading={cloudLoading}
+            cloudError={cloudError}
+            onSignIn={signInWithGoogle}
+            onSignOut={signOut}
+            onSave={handleCloudSave}
+            onLoad={handleLoadModel}
+            onDelete={handleDelete}
+            onRefresh={refreshModels}
+          />
+        </main>
+      </div>
     </div>
   )
 }

@@ -1,3 +1,48 @@
+/* ─── Background gradient orbs (mesh) ─────────────────────────────────────── */
+
+.app-root {
+  position: relative;
+  min-height: 100vh;
+  background: #ffffff;
+  overflow: hidden;
+}
+
+.orb {
+  position: fixed;
+  border-radius: 50%;
+  pointer-events: none;
+  filter: blur(100px);
+  mix-blend-mode: multiply;
+  z-index: 0;
+}
+
+.orb-1 {
+  top: -20%;
+  left: -10%;
+  width: 55%;
+  height: 70%;
+  background: radial-gradient(ellipse at center, rgba(251, 113, 133, 0.28) 0%, rgba(251, 146, 60, 0.18) 100%);
+}
+
+.orb-2 {
+  bottom: -20%;
+  right: -10%;
+  width: 60%;
+  height: 65%;
+  background: radial-gradient(ellipse at center, rgba(99, 102, 241, 0.26) 0%, rgba(168, 85, 247, 0.18) 100%);
+}
+
+.orb-3 {
+  top: 20%;
+  right: 20%;
+  width: 32%;
+  height: 42%;
+  background: radial-gradient(ellipse at center, rgba(96, 165, 250, 0.14) 0%, transparent 70%);
+  mix-blend-mode: normal;
+}
+
+/* ─── Layout ────────────────────────────────────────────────────────────────── */
+
 .app-layout {
   display: grid;
   grid-template-columns: 390px 1fr;
@@ -5,15 +50,21 @@
   min-height: 100vh;
   padding: 1rem;
   box-sizing: border-box;
+  position: relative;
+  z-index: 1;
 }
+
+/* ─── Panels (cards) ────────────────────────────────────────────────────────── */
 
 .panel {
   overflow-y: auto;
-  border-radius: 14px;
-  border: 1px solid #d7d9df;
-  background: #ffffff;
+  border-radius: 16px;
+  border: 1px solid rgba(229, 231, 235, 0.9);
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   padding: 1rem;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.07);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05), 0 4px 16px rgba(0, 0, 0, 0.04);
 }
 
 .panel h1 {
@@ -23,16 +74,18 @@
 
 .panel-subtitle {
   margin: 0.45rem 0 1rem;
-  color: #4f5564;
+  color: #6b7280;
   font-size: 0.92rem;
 }
 
+/* ─── Panel sections (sub-panels) ───────────────────────────────────────────── */
+
 .panel-section {
-  border: 1px solid #e7e9f0;
-  border-radius: 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
   padding: 0.8rem;
   margin-bottom: 0.9rem;
-  background: #fbfcff;
+  background: #f9fafb;
 }
 
 .panel-section h2 {
@@ -40,6 +93,8 @@
   margin-bottom: 0.7rem;
   font-size: 1rem;
 }
+
+/* ─── Form elements ─────────────────────────────────────────────────────────── */
 
 .panel label {
   display: flex;
@@ -59,30 +114,50 @@ input,
 select,
 button {
   border-radius: 8px;
-  border: 1px solid #cfd5e0;
+  border: 1px solid #d1d5db;
   font-size: 0.9rem;
   padding: 0.5rem 0.6rem;
   font: inherit;
+  background: #ffffff;
+  color: #1e2230;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+input:focus,
+select:focus {
+  outline: none;
+  border-color: #60a5fa;
+  box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
 }
 
 button {
   cursor: pointer;
-  background: #f6f8fc;
+  background: #f9fafb;
+  border-color: #e5e7eb;
 }
 
 button:hover {
-  border-color: #7282ff;
+  border-color: #a5b4fc;
+  background: #f5f5ff;
 }
 
 button.primary {
-  background: #3f63ff;
-  border-color: #3f63ff;
+  background: #2563eb;
+  border-color: #2563eb;
   color: #fff;
+}
+
+button.primary:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
 }
 
 button.ghost {
   background: transparent;
+  border-color: transparent;
 }
+
+/* ─── Lists ─────────────────────────────────────────────────────────────────── */
 
 .hole-list,
 .saved-model-list {
@@ -95,13 +170,14 @@ button.ghost {
 
 .hole-list li,
 .saved-model-list li {
-  border: 1px solid #d8deea;
+  border: 1px solid #e5e7eb;
   border-radius: 8px;
   padding: 0.45rem 0.55rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
   gap: 0.7rem;
+  background: #ffffff;
 }
 
 .placeholder-row {
@@ -109,6 +185,8 @@ button.ghost {
   flex-direction: row !important;
   gap: 0.6rem !important;
 }
+
+/* ─── Viewport column ───────────────────────────────────────────────────────── */
 
 .viewport-column {
   display: flex;
@@ -118,10 +196,13 @@ button.ghost {
 }
 
 .viewport-column header {
-  background: #ffffff;
-  border: 1px solid #d7d9df;
-  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  border-radius: 14px;
   padding: 0.8rem 1rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .viewport-column header h2 {
@@ -130,20 +211,24 @@ button.ghost {
 
 .viewport-column header p {
   margin: 0.2rem 0 0;
-  color: #4f5564;
+  color: #6b7280;
 }
 
+/* ─── Canvas shell ──────────────────────────────────────────────────────────── */
+
 .canvas-shell {
-  border: 1px solid #d7d9df;
-  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
   overflow: hidden;
-  background: linear-gradient(180deg, #f5f8ff, #eef2fb);
+  background: linear-gradient(180deg, #f0f4ff, #e8eeff);
   height: 560px;
 }
 
+/* ─── Cloud panel ───────────────────────────────────────────────────────────── */
+
 .cloud-panel .hint {
   margin: 0.2rem 0 0.7rem;
-  color: #4f5564;
+  color: #6b7280;
   font-size: 0.9rem;
 }
 
@@ -156,7 +241,7 @@ button.ghost {
 
 .saved-model-list li p {
   margin: 0.2rem 0 0;
-  color: #6f7688;
+  color: #9ca3af;
   font-size: 0.8rem;
 }
 
@@ -165,10 +250,14 @@ button.ghost {
   gap: 0.5rem;
 }
 
+/* ─── Misc ──────────────────────────────────────────────────────────────────── */
+
 .error {
-  color: #b12f2f;
+  color: #b91c1c;
   margin: 0.6rem 0 0;
 }
+
+/* ─── Responsive ────────────────────────────────────────────────────────────── */
 
 @media (max-width: 1080px) {
   .app-layout {
