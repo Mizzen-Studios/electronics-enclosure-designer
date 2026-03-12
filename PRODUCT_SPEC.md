@@ -51,6 +51,19 @@ Cloud persistence path:
   - print/manufacturing service
   - delivery/fulfilment
 
+## Roadmap Additions (Post-MVP)
+
+### Marketing Intelligence Inbox (Issue #1)
+
+Build a dedicated project email-based intelligence pipeline to monitor chip/vendor newsletters and convert them into structured release digests.
+
+Planned scope:
+
+- dedicated inbox for vendor subscriptions
+- ingestion flow: email -> parser/tagging -> release digest
+- candidate sources: TI, ST, NXP, Microchip, ADI, Infineon, Espressif, Nordic (plus others)
+- compliance safeguards (opt-in sources, unsubscribe handling, spam controls, retention policy)
+
 ## Non-Goals for MVP
 
 - Detailed part libraries and board-specific mounting templates

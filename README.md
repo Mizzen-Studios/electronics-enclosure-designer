@@ -101,6 +101,7 @@ Each model document stores:
 - Additional cutouts (slots, rectangles), standoffs, bosses
 - Split-body export (base + lid as separate solids)
 - Parametric templates for popular dev boards (ESP32, Raspberry Pi Pico, etc.)
+- Marketing Intelligence Inbox for semiconductor/vendor release tracking (see Issue #1)
 - Paid flow placeholders into real checkout + quote workflow
 - Rule-based design validation (minimum wall thickness, printability checks)
 - Undo/redo and model version history
