@@ -1,34 +1,52 @@
 # Electronics Enclosure Designer
 
-MVP web app for designing a custom electronics enclosure and exporting a 3D-printable model.
+Browser-based MVP for creating simple custom electronics enclosures and exporting them as printable STL files.
 
-## Stack
+Repository: <https://github.com/Mizzen-Studios/electronics-enclosure-designer>
 
-- React + TypeScript (Vite)
-- 3D: `three`, `@react-three/fiber`, `@react-three/drei`, `three-csg-ts`
-- Export: `STLExporter` from Three.js examples
-- Firebase Auth + Firestore for optional cloud save/load
+## Product Summary
 
-## MVP Features Implemented
+This project targets makers and hardware teams that need a fast enclosure prototype without opening full CAD tooling.
 
-- Live 3D viewport with orbit controls and real-time geometry updates
-- Enclosure controls:
-  - Width / Height / Depth / Wall Thickness
-  - Enclosure type (`plain`, `lid`, `flanged`)
-- Basic face-hole tool:
-  - Select surface (`front`, `back`, `left`, `right`, `top`, `bottom`)
-  - Set hole radius and x/y offsets
-  - Add/remove circular holes
-- One-click STL download (`Download STL`)
-- No-login usage by default
-- Optional sign-in with Google (Firebase Auth) enabling cloud save/load of models in Firestore
-- Product placeholder UI + data model fields for:
-  - premium enclosure options (advanced fastening, waterproof seal)
-  - paid services (printing/manufacturing + delivery)
+Current focus is **speed to first printable model**:
+- configure dimensions and enclosure type
+- add/edit circular face holes
+- preview in real time in 3D
+- export STL in one click
 
-## Why STL
+## MVP Capabilities (Current)
 
-STL was selected as the primary export format because it is broadly supported by slicers (PrusaSlicer, Cura, Bambu Studio), CAD tools, and manufacturing pipelines.
+- React + Three.js live parametric preview
+- Adjustable enclosure dimensions:
+  - width / height / depth / wall thickness
+  - enclosure type: `plain`, `lid`, `flanged`
+- Circular hole tool with face selection and x/y offsets
+- STL export via `Download STL`
+- Optional Firebase Auth + Firestore cloud model save/load
+- Placeholder data model fields for premium options and paid manufacturing services
+
+## Guest vs Account Behavior
+
+- **Guest mode (default):** fully usable for designing and exporting STL locally. No sign-in required.
+- **Signed-in mode (Google):** enables cloud save/load/delete at `users/{uid}/models/{modelId}` in Firestore.
+- If Firebase env vars are missing, app remains usable in guest mode and cloud/auth UI is disabled gracefully.
+
+## Premium + Manufacturing Roadmap Context
+
+The current UI includes placeholders for future monetized capabilities:
+- Premium enclosure options (e.g., fastening kits, waterproofing packages)
+- Manufacturing/print services and delivery fulfillment flow
+
+These are intentionally not wired to checkout in MVP, but the data structures are present to avoid migration churn later.
+
+## Related Workstream: Marketing Intelligence Inbox
+
+Roadmap includes a separate **Marketing Intelligence Inbox** initiative (Issue #1):
+- ingest vendor/chip newsletters through a dedicated inbox
+- parse/tag releases into structured digests
+- support product and go-to-market planning with better component intel
+
+This is adjacent to the enclosure app and tracked as a strategic follow-on work item.
 
 ## Local Development
 
@@ -37,27 +55,23 @@ npm install
 npm run dev
 ```
 
-Open the URL shown by Vite (usually `http://localhost:5173`).
+Open the Vite URL (usually `http://localhost:5173`).
 
 ## Environment Variables
 
-Copy `.env.example` to `.env` and fill values to enable Firebase features.
+Copy `.env.example` to `.env` and fill values to enable Firebase features:
 
 ```bash
 cp .env.example .env
 ```
 
-If these values are omitted, the app still works in guest mode but cloud save/load and sign-in are disabled.
-
 Required for Firebase mode:
-
 - `VITE_FIREBASE_API_KEY`
 - `VITE_FIREBASE_AUTH_DOMAIN`
 - `VITE_FIREBASE_PROJECT_ID`
 - `VITE_FIREBASE_APP_ID`
 
-Also supported:
-
+Optional Firebase vars:
 - `VITE_FIREBASE_STORAGE_BUCKET`
 - `VITE_FIREBASE_MESSAGING_SENDER_ID`
 
@@ -66,18 +80,9 @@ Also supported:
 1. Create a Firebase project.
 2. Add a Web app in Firebase console.
 3. Enable **Authentication** → Google provider.
-4. Enable **Firestore Database** (start in test mode for prototyping, then lock down rules).
-5. Add your local dev domain to Auth authorized domains if needed (`localhost`).
+4. Enable **Firestore Database**.
+5. Add `localhost` to Auth authorized domains if needed.
 6. Paste config values into `.env`.
-
-Firestore path used:
-
-- `users/{uid}/models/{modelId}`
-
-Each model document stores:
-
-- `config` (full enclosure model config)
-- `updatedAt` (client timestamp in ms)
 
 ## Scripts
 
@@ -86,22 +91,12 @@ Each model document stores:
 - `npm run preview` — preview production build
 - `npm run lint` — run ESLint
 
-## Architecture Notes
+## Architecture Snapshot
 
-- `src/types/enclosure.ts` — core domain types
-- `src/utils/enclosureGeometry.ts` — shell + hole CSG geometry generation
-- `src/components/DesignerCanvas.tsx` — 3D viewport
-- `src/components/ControlPanel.tsx` — dimensions/type/hole controls
-- `src/components/CloudPanel.tsx` — auth + cloud storage UI
-- `src/services/firebase.ts` + `src/services/modelStore.ts` — Firebase wiring
-
-## Roadmap (Post-MVP)
-
-- Better editing UX (click-to-place holes directly on face)
-- Additional cutouts (slots, rectangles), standoffs, bosses
-- Split-body export (base + lid as separate solids)
-- Parametric templates for popular dev boards (ESP32, Raspberry Pi Pico, etc.)
-- Marketing Intelligence Inbox for semiconductor/vendor release tracking (see Issue #1)
-- Paid flow placeholders into real checkout + quote workflow
-- Rule-based design validation (minimum wall thickness, printability checks)
-- Undo/redo and model version history
+- `src/types/enclosure.ts` — domain model (`EnclosureConfig`, holes, premium/services placeholders)
+- `src/utils/enclosureGeometry.ts` — core shell and hole CSG generation
+- `src/components/DesignerCanvas.tsx` + `src/components/EnclosureMesh.tsx` — 3D rendering
+- `src/components/ControlPanel.tsx` — model editing controls
+- `src/components/CloudPanel.tsx` — auth and cloud model UI
+- `src/services/firebase.ts` + `src/services/modelStore.ts` — Firebase bootstrapping and persistence
+- `src/utils/exportStl.ts` — STL export
