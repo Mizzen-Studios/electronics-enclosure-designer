@@ -11,7 +11,13 @@ export function exportModelAsStl(config: EnclosureConfig) {
   const blob = new Blob([stl], { type: 'model/stl' })
   const url = URL.createObjectURL(blob)
 
-  const safeName = config.name.trim().replace(/\s+/g, '-').toLowerCase() || 'enclosure-model'
+  const safeName =
+    config.name
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9\-\s]/g, '')
+      .replace(/\s+/g, '-')
+      .slice(0, 80) || 'enclosure-model'
   const anchor = document.createElement('a')
   anchor.href = url
   anchor.download = `${safeName}.stl`
@@ -19,5 +25,6 @@ export function exportModelAsStl(config: EnclosureConfig) {
   anchor.click()
   anchor.remove()
 
+  mesh.geometry.dispose()
   URL.revokeObjectURL(url)
 }

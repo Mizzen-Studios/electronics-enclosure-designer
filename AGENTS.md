@@ -47,9 +47,10 @@ npm run dev
 npm run build
 npm run lint
 npm run preview
+npm test
 ```
 
-Use `npm run build` as the minimum validation before merging changes.
+Use `npm run build` + `npm test` as the minimum validation before merging changes.
 
 ## Firebase / Environment Expectations
 

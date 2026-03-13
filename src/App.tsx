@@ -1,12 +1,13 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useDeferredValue, useEffect, useMemo, useState } from 'react'
 import './App.css'
 import { defaultModel } from './app/defaultModel'
-import { DesignerCanvas } from './components/DesignerCanvas'
-import { ControlPanel } from './components/ControlPanel'
-import { CloudPanel } from './components/CloudPanel'
 import { BuyModal } from './components/BuyModal'
-import { OrderSuccess } from './pages/OrderSuccess'
+import { CloudPanel } from './components/CloudPanel'
+import { ControlPanel } from './components/ControlPanel'
+import { DesignerCanvas } from './components/DesignerCanvas'
+import { useAccountTier } from './hooks/useAccountTier'
 import { useAuth } from './hooks/useAuth'
+import { OrderSuccess } from './pages/OrderSuccess'
 import { loadModels, removeModel, saveModel } from './services/modelStore'
 import type { EnclosureConfig, StoredModel } from './types/enclosure'
 import { exportModelAsStl } from './utils/exportStl'
@@ -17,28 +18,42 @@ function App() {
   const [models, setModels] = useState<StoredModel[]>([])
   const [cloudLoading, setCloudLoading] = useState(false)
   const [cloudError, setCloudError] = useState<string | null>(null)
-  
   const [buyModalOpen, setBuyModalOpen] = useState(false)
   const [currentRoute, setCurrentRoute] = useState(() => window.location.hash.slice(1) || 'home')
 
   const { enabled, loading: authLoading, user, signInWithGoogle, signOut } = useAuth()
+  const account = useAccountTier(user, enabled)
+  const previewConfig = useDeferredValue(config)
 
-  const applyConfig = useCallback((next: EnclosureConfig) => {
-    setConfig(sanitizeConfig(next))
-  }, [])
+  const applyConfig = useCallback(
+    (next: EnclosureConfig) => {
+      setConfig(sanitizeConfig(next, { allowPremium: account.isPaid }))
+    },
+    [account.isPaid],
+  )
+
+  useEffect(() => {
+    setConfig((current) => sanitizeConfig(current, { allowPremium: account.isPaid }))
+  }, [account.isPaid])
 
   useEffect(() => {
     const handleHashChange = () => {
       setCurrentRoute(window.location.hash.slice(1) || 'home')
     }
+
     window.addEventListener('hashchange', handleHashChange)
     return () => window.removeEventListener('hashchange', handleHashChange)
   }, [])
 
   const refreshModels = useCallback(async () => {
-    if (!user) { setModels([]); return }
+    if (!user) {
+      setModels([])
+      return
+    }
+
     setCloudError(null)
     setCloudLoading(true)
+
     try {
       setModels(await loadModels(user.uid))
     } catch (error) {
@@ -48,40 +63,76 @@ function App() {
     }
   }, [user])
 
-  useEffect(() => { void refreshModels() }, [refreshModels])
+  useEffect(() => {
+    void refreshModels()
+  }, [refreshModels])
 
   const handleCloudSave = useCallback(async () => {
-    if (!user) { setCloudError('Sign in to save models in the cloud.'); return }
+    if (!user) {
+      setCloudError('Sign in to save models in the cloud.')
+      return
+    }
+
     setCloudError(null)
     setCloudLoading(true)
+
     try {
       await saveModel(user.uid, config)
-      setModels(await loadModels(user.uid))
+      await refreshModels()
     } catch (error) {
       setCloudError(error instanceof Error ? error.message : 'Failed to save model.')
-    } finally {
       setCloudLoading(false)
     }
-  }, [config, user])
+  }, [config, refreshModels, user])
 
-  const handleDelete = useCallback(async (id: string) => {
-    if (!user) return
-    setCloudError(null)
-    setCloudLoading(true)
+  const handleDelete = useCallback(
+    async (id: string) => {
+      if (!user) {
+        return
+      }
+
+      setCloudError(null)
+      setCloudLoading(true)
+
+      try {
+        await removeModel(user.uid, id)
+        await refreshModels()
+      } catch (error) {
+        setCloudError(error instanceof Error ? error.message : 'Failed to delete model.')
+        setCloudLoading(false)
+      }
+    },
+    [refreshModels, user],
+  )
+
+  const handleLoadModel = useCallback(
+    (id: string) => {
+      const found = models.find((model) => model.id === id)
+      if (found) {
+        applyConfig(found.config)
+      }
+    },
+    [applyConfig, models],
+  )
+
+  const handleSignIn = useCallback(async () => {
     try {
-      await removeModel(user.uid, id)
-      setModels(await loadModels(user.uid))
+      setCloudError(null)
+      await signInWithGoogle()
     } catch (error) {
-      setCloudError(error instanceof Error ? error.message : 'Failed to delete model.')
-    } finally {
-      setCloudLoading(false)
+      setCloudError(error instanceof Error ? error.message : 'Unable to sign in.')
     }
-  }, [user])
+  }, [signInWithGoogle])
 
-  const handleLoadModel = useCallback((id: string) => {
-    const found = models.find((m) => m.id === id)
-    if (found) applyConfig(found.config)
-  }, [applyConfig, models])
+  const handleSignOut = useCallback(async () => {
+    try {
+      setCloudError(null)
+      await signOut()
+      setModels([])
+    } catch (error) {
+      setCloudError(error instanceof Error ? error.message : 'Unable to sign out.')
+    }
+  }, [signOut])
 
   const statsLabel = useMemo(
     () => `${config.width} × ${config.height} × ${config.depth} mm · ${config.holes.length} hole${config.holes.length !== 1 ? 's' : ''}`,
@@ -96,8 +147,8 @@ function App() {
       models={models}
       cloudLoading={cloudLoading}
       cloudError={cloudError}
-      onSignIn={signInWithGoogle}
-      onSignOut={signOut}
+      onSignIn={handleSignIn}
+      onSignOut={handleSignOut}
       onSave={handleCloudSave}
       onLoad={handleLoadModel}
       onDelete={handleDelete}
@@ -129,15 +180,23 @@ function App() {
           onExportStl={() => exportModelAsStl(config)}
           onBuy={() => setBuyModalOpen(true)}
           cloudSlot={cloudSlot}
+          accountTier={account.tier}
+          accountLoading={account.loading}
+          accountError={account.error}
         />
 
         <div className="viewport-column">
-          <DesignerCanvas config={config} statsLabel={statsLabel} />
+          <DesignerCanvas config={previewConfig} statsLabel={statsLabel} />
         </div>
       </div>
 
       {buyModalOpen && (
-        <BuyModal config={config} onClose={() => setBuyModalOpen(false)} />
+        <BuyModal
+          config={config}
+          firebaseEnabled={enabled}
+          isPaidAccount={account.isPaid}
+          onClose={() => setBuyModalOpen(false)}
+        />
       )}
     </div>
   )

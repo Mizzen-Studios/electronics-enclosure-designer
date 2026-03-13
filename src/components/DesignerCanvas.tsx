@@ -1,7 +1,10 @@
 import { Canvas } from '@react-three/fiber'
-import { Environment, Grid, OrbitControls } from '@react-three/drei'
+import { Environment, OrbitControls } from '@react-three/drei'
+import { useMemo } from 'react'
 import type { EnclosureConfig } from '../types/enclosure'
 import { EnclosureMesh } from './EnclosureMesh'
+import { OrientationWidget } from './scene/OrientationWidget'
+import { SceneGridAndRulers } from './scene/SceneGridAndRulers'
 
 interface DesignerCanvasProps {
   config: EnclosureConfig
@@ -9,21 +12,37 @@ interface DesignerCanvasProps {
 }
 
 export function DesignerCanvas({ config, statsLabel }: DesignerCanvasProps) {
-  const largestDimension = Math.max(config.width, config.height, config.depth)
-  const cameraDistance = largestDimension * 2.1
+  const sceneMetrics = useMemo(() => {
+    const largestDimension = Math.max(config.width, config.height, config.depth)
+    return {
+      largestDimension,
+      cameraDistance: largestDimension * 2.1,
+      lightPosition: [largestDimension, largestDimension * 1.8, largestDimension] as [number, number, number],
+    }
+  }, [config.depth, config.height, config.width])
 
   return (
     <div className="canvas-shell">
-      <Canvas shadows camera={{ position: [cameraDistance, cameraDistance, cameraDistance], fov: 40 }}>
+      <Canvas
+        shadows
+        dpr={[1, 1.8]}
+        camera={{
+          position: [sceneMetrics.cameraDistance, sceneMetrics.cameraDistance, sceneMetrics.cameraDistance],
+          fov: 40,
+        }}
+      >
         <ambientLight intensity={0.45} />
         <directionalLight
           intensity={1}
-          position={[largestDimension, largestDimension * 1.8, largestDimension]}
+          position={sceneMetrics.lightPosition}
           castShadow
         />
+
         <EnclosureMesh config={config} />
-        <Grid args={[largestDimension * 3, largestDimension * 3]} cellSize={8} cellThickness={0.5} />
-        <OrbitControls makeDefault />
+        <SceneGridAndRulers width={config.width} height={config.height} depth={config.depth} />
+
+        <OrbitControls makeDefault enableDamping dampingFactor={0.08} />
+        <OrientationWidget />
         <Environment preset="city" />
       </Canvas>
       <div className="stats-overlay">{statsLabel}</div>

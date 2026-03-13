@@ -289,6 +289,44 @@ button.add-btn {
   margin-bottom: 0;
 }
 
+/* ─── Premium toggles ───────────────────────────────────────────────────────── */
+
+.toggle-field {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: start;
+  gap: 0.55rem;
+  margin-bottom: 0.7rem;
+  font-size: 0.82rem;
+  color: #374151;
+}
+
+.toggle-field:last-of-type {
+  margin-bottom: 0.35rem;
+}
+
+.toggle-field input[type='checkbox'] {
+  margin-top: 0.15rem;
+}
+
+.toggle-field span {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.toggle-field small {
+  color: #9ca3af;
+  font-size: 0.73rem;
+  line-height: 1.4;
+}
+
+.premium-lock {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.78rem;
+}
+
 /* ─── Cloud accordion ───────────────────────────────────────────────────────── */
 
 .cloud-accordion {
@@ -560,6 +598,16 @@ button.add-btn {
   color: #4b5563;
   display: flex;
   justify-content: space-between;
+}
+
+.modal-control-grid {
+  display: grid;
+  gap: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.modal-field {
+  margin-bottom: 0;
 }
 
 .quantity-row {

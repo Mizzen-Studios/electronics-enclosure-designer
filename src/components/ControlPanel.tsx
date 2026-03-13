@@ -1,20 +1,24 @@
 import { useMemo, useState } from 'react'
-import { Download, ShoppingCart, Plus, X } from 'lucide-react'
+import type { ReactNode } from 'react'
+import { Download, Plus, ShoppingCart, X } from 'lucide-react'
+import type { AccountTier } from '../types/account'
 import type { CircularHole, EnclosureConfig, Face } from '../types/enclosure'
-import { getFaceBounds } from '../utils/enclosureGeometry'
+import { getFaceBounds } from '../utils/enclosureBounds'
 
-// 1 inch = 25.4 mm
 const MM_PER_INCH = 25.4
+
+type Unit = 'mm' | 'in'
 
 interface ControlPanelProps {
   config: EnclosureConfig
   onChange: (next: EnclosureConfig) => void
   onExportStl: () => void
   onBuy: () => void
-  cloudSlot?: React.ReactNode
+  cloudSlot?: ReactNode
+  accountTier: AccountTier
+  accountLoading: boolean
+  accountError: string | null
 }
-
-type Unit = 'mm' | 'in'
 
 const faces: Face[] = ['front', 'back', 'left', 'right', 'top', 'bottom']
 
@@ -25,16 +29,38 @@ function makeHoleId() {
   return `hole-${Date.now()}-${Math.floor(Math.random() * 10_000)}`
 }
 
-export function ControlPanel({ config, onChange, onExportStl, onBuy, cloudSlot }: ControlPanelProps) {
+function getPremiumGateLabel(accountTier: AccountTier): string {
+  if (accountTier === 'guest') {
+    return 'Sign in to unlock premium options.'
+  }
+
+  if (accountTier === 'free') {
+    return 'Premium options require a paid account.'
+  }
+
+  return 'Premium account active.'
+}
+
+export function ControlPanel({
+  config,
+  onChange,
+  onExportStl,
+  onBuy,
+  cloudSlot,
+  accountTier,
+  accountLoading,
+  accountError,
+}: ControlPanelProps) {
   const [unit, setUnit] = useState<Unit>('mm')
   const [face, setFace] = useState<Face>('front')
   const [holeRadius, setHoleRadius] = useState(4)
   const [holeX, setHoleX] = useState(0)
   const [holeY, setHoleY] = useState(0)
 
-  // Conversions for display
-  const toDisplay = (mmValue: number) => unit === 'in' ? Number((mmValue / MM_PER_INCH).toFixed(3)) : mmValue
-  const toMm = (displayValue: number) => unit === 'in' ? displayValue * MM_PER_INCH : displayValue
+  const canEditPremium = accountTier === 'paid'
+
+  const toDisplay = (mmValue: number) => (unit === 'in' ? Number((mmValue / MM_PER_INCH).toFixed(3)) : mmValue)
+  const toMm = (displayValue: number) => (unit === 'in' ? displayValue * MM_PER_INCH : displayValue)
   const step = unit === 'in' ? 0.05 : 0.5
 
   const bounds = useMemo(() => getFaceBounds(config, face), [config, face])
@@ -56,13 +82,25 @@ export function ControlPanel({ config, onChange, onExportStl, onBuy, cloudSlot }
   }
 
   const removeHole = (id: string) =>
-    onChange({ ...config, holes: config.holes.filter((h) => h.id !== id) })
+    onChange({ ...config, holes: config.holes.filter((hole) => hole.id !== id) })
+
+  const updatePremiumOption = (option: 'advancedFastening' | 'waterproofSeal', enabled: boolean) => {
+    if (!canEditPremium) {
+      return
+    }
+
+    onChange({
+      ...config,
+      premium: {
+        ...config.premium,
+        [option]: enabled,
+      },
+    })
+  }
 
   return (
     <aside className="sidebar">
-      {/* ── Scrollable body ── */}
       <div className="sidebar-body">
-        {/* Header */}
         <div className="sidebar-header">
           <div style={{ display: 'flex', alignItems: 'center' }}>
             <h1>Enclosure Designer</h1>
@@ -74,7 +112,6 @@ export function ControlPanel({ config, onChange, onExportStl, onBuy, cloudSlot }
           <p>Parametric electronics enclosures, ready to print.</p>
         </div>
 
-        {/* Dimensions */}
         <div className="section-group">
           <p className="section-label">Dimensions</p>
 
@@ -82,7 +119,7 @@ export function ControlPanel({ config, onChange, onExportStl, onBuy, cloudSlot }
             Type
             <select
               value={config.type}
-              onChange={(e) => onChange({ ...config, type: e.target.value as EnclosureConfig['type'] })}
+              onChange={(event) => onChange({ ...config, type: event.target.value as EnclosureConfig['type'] })}
             >
               <option value="plain">Plain box</option>
               <option value="lid">Lid style</option>
@@ -99,7 +136,7 @@ export function ControlPanel({ config, onChange, onExportStl, onBuy, cloudSlot }
                 max={toDisplay(240)}
                 step={step}
                 value={toDisplay(config.width)}
-                onChange={(e) => onChange({ ...config, width: toMm(Number(e.target.value)) })}
+                onChange={(event) => onChange({ ...config, width: toMm(Number(event.target.value)) })}
               />
             </label>
             <label className="field-label">
@@ -110,7 +147,7 @@ export function ControlPanel({ config, onChange, onExportStl, onBuy, cloudSlot }
                 max={toDisplay(180)}
                 step={step}
                 value={toDisplay(config.height)}
-                onChange={(e) => onChange({ ...config, height: toMm(Number(e.target.value)) })}
+                onChange={(event) => onChange({ ...config, height: toMm(Number(event.target.value)) })}
               />
             </label>
             <label className="field-label">
@@ -121,7 +158,7 @@ export function ControlPanel({ config, onChange, onExportStl, onBuy, cloudSlot }
                 max={toDisplay(240)}
                 step={step}
                 value={toDisplay(config.depth)}
-                onChange={(e) => onChange({ ...config, depth: toMm(Number(e.target.value)) })}
+                onChange={(event) => onChange({ ...config, depth: toMm(Number(event.target.value)) })}
               />
             </label>
           </div>
@@ -134,12 +171,11 @@ export function ControlPanel({ config, onChange, onExportStl, onBuy, cloudSlot }
               max={toDisplay(20)}
               step={step}
               value={toDisplay(config.wallThickness)}
-              onChange={(e) => onChange({ ...config, wallThickness: toMm(Number(e.target.value)) })}
+              onChange={(event) => onChange({ ...config, wallThickness: toMm(Number(event.target.value)) })}
             />
           </label>
         </div>
 
-        {/* Face holes */}
         <div className="section-group">
           <p className="section-label">Face Holes</p>
 
@@ -147,18 +183,21 @@ export function ControlPanel({ config, onChange, onExportStl, onBuy, cloudSlot }
             Surface
             <select
               value={face}
-              onChange={(e) => {
-                const nextFace = e.target.value as Face
-                const nb = getFaceBounds(config, nextFace)
-                const nmr = Math.max(1, Math.min(nb.xLimit, nb.yLimit))
-                const nr = clamp(holeRadius, 1, nmr)
+              onChange={(event) => {
+                const nextFace = event.target.value as Face
+                const nextBounds = getFaceBounds(config, nextFace)
+                const nextMaxRadius = Math.max(1, Math.min(nextBounds.xLimit, nextBounds.yLimit))
+                const nextRadius = clamp(holeRadius, 1, nextMaxRadius)
+
                 setFace(nextFace)
-                setHoleRadius(nr)
-                setHoleX(clamp(holeX, -nb.xLimit + nr, nb.xLimit - nr))
-                setHoleY(clamp(holeY, -nb.yLimit + nr, nb.yLimit - nr))
+                setHoleRadius(nextRadius)
+                setHoleX(clamp(holeX, -nextBounds.xLimit + nextRadius, nextBounds.xLimit - nextRadius))
+                setHoleY(clamp(holeY, -nextBounds.yLimit + nextRadius, nextBounds.yLimit - nextRadius))
               }}
             >
-              {faces.map((f) => <option key={f} value={f}>{f}</option>)}
+              {faces.map((itemFace) => (
+                <option key={itemFace} value={itemFace}>{itemFace}</option>
+              ))}
             </select>
           </label>
 
@@ -171,11 +210,11 @@ export function ControlPanel({ config, onChange, onExportStl, onBuy, cloudSlot }
                 max={toDisplay(maxRadius)}
                 step={step}
                 value={toDisplay(holeRadius)}
-                onChange={(e) => {
-                  const nr = clamp(toMm(Number(e.target.value)), 1, maxRadius)
-                  setHoleRadius(nr)
-                  setHoleX(clamp(holeX, -bounds.xLimit + nr, bounds.xLimit - nr))
-                  setHoleY(clamp(holeY, -bounds.yLimit + nr, bounds.yLimit - nr))
+                onChange={(event) => {
+                  const nextRadius = clamp(toMm(Number(event.target.value)), 1, maxRadius)
+                  setHoleRadius(nextRadius)
+                  setHoleX(clamp(holeX, -bounds.xLimit + nextRadius, bounds.xLimit - nextRadius))
+                  setHoleY(clamp(holeY, -bounds.yLimit + nextRadius, bounds.yLimit - nextRadius))
                 }}
               />
             </label>
@@ -187,8 +226,8 @@ export function ControlPanel({ config, onChange, onExportStl, onBuy, cloudSlot }
                 max={toDisplay(bounds.xLimit - holeRadius)}
                 step={step}
                 value={toDisplay(holeX)}
-                onChange={(e) =>
-                  setHoleX(clamp(toMm(Number(e.target.value)), -bounds.xLimit + holeRadius, bounds.xLimit - holeRadius))
+                onChange={(event) =>
+                  setHoleX(clamp(toMm(Number(event.target.value)), -bounds.xLimit + holeRadius, bounds.xLimit - holeRadius))
                 }
               />
             </label>
@@ -200,8 +239,8 @@ export function ControlPanel({ config, onChange, onExportStl, onBuy, cloudSlot }
                 max={toDisplay(bounds.yLimit - holeRadius)}
                 step={step}
                 value={toDisplay(holeY)}
-                onChange={(e) =>
-                  setHoleY(clamp(toMm(Number(e.target.value)), -bounds.yLimit + holeRadius, bounds.yLimit - holeRadius))
+                onChange={(event) =>
+                  setHoleY(clamp(toMm(Number(event.target.value)), -bounds.yLimit + holeRadius, bounds.yLimit - holeRadius))
                 }
               />
             </label>
@@ -219,18 +258,56 @@ export function ControlPanel({ config, onChange, onExportStl, onBuy, cloudSlot }
               {config.holes.map((hole) => (
                 <span key={hole.id} className="hole-tag">
                   {hole.face} r{toDisplay(hole.radius)} ({toDisplay(hole.x)},{toDisplay(hole.y)})
-                  <button onClick={() => removeHole(hole.id)} title="Remove hole"><X size={11} strokeWidth={2.5} /></button>
+                  <button onClick={() => removeHole(hole.id)} title="Remove hole">
+                    <X size={11} strokeWidth={2.5} />
+                  </button>
                 </span>
               ))}
             </div>
           )}
         </div>
 
-        {/* Cloud save slot */}
+        <div className="section-group">
+          <p className="section-label">Premium Options</p>
+
+          <label className="toggle-field">
+            <input
+              type="checkbox"
+              checked={config.premium.advancedFastening}
+              disabled={!canEditPremium}
+              onChange={(event) => updatePremiumOption('advancedFastening', event.target.checked)}
+            />
+            <span>
+              Advanced fastening kit
+              <small>adds threaded inserts and screw-ready support geometry presets</small>
+            </span>
+          </label>
+
+          <label className="toggle-field">
+            <input
+              type="checkbox"
+              checked={config.premium.waterproofSeal}
+              disabled={!canEditPremium}
+              onChange={(event) => updatePremiumOption('waterproofSeal', event.target.checked)}
+            />
+            <span>
+              Waterproof sealing profile
+              <small>enables gasket-ready lip clearances for sealed enclosures</small>
+            </span>
+          </label>
+
+          {accountLoading ? (
+            <p className="premium-lock">Checking account tier…</p>
+          ) : (
+            <p className="premium-lock">{getPremiumGateLabel(accountTier)}</p>
+          )}
+
+          {accountError && <p className="error">{accountError}</p>}
+        </div>
+
         {cloudSlot}
       </div>
 
-      {/* ── Sticky action footer ── */}
       <div className="action-footer">
         <button className="primary" onClick={onExportStl}>
           <Download size={14} strokeWidth={2.5} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '0.4rem' }} />
