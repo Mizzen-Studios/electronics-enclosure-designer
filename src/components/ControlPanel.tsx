@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react'
 import type { CircularHole, EnclosureConfig, Face } from '../types/enclosure'
-import { featureFlags } from '../config/featureFlags'
 import { getFaceBounds } from '../utils/enclosureGeometry'
 
 interface ControlPanelProps {
   config: EnclosureConfig
   onChange: (next: EnclosureConfig) => void
   onExportStl: () => void
+  cloudSlot?: React.ReactNode
 }
 
 const faces: Face[] = ['front', 'back', 'left', 'right', 'top', 'bottom']
@@ -15,11 +15,10 @@ function makeHoleId() {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
     return crypto.randomUUID()
   }
-
   return `hole-${Date.now()}-${Math.floor(Math.random() * 10_000)}`
 }
 
-export function ControlPanel({ config, onChange, onExportStl }: ControlPanelProps) {
+export function ControlPanel({ config, onChange, onExportStl, cloudSlot }: ControlPanelProps) {
   const [face, setFace] = useState<Face>('front')
   const [holeRadius, setHoleRadius] = useState(4)
   const [holeX, setHoleX] = useState(0)
@@ -39,271 +38,180 @@ export function ControlPanel({ config, onChange, onExportStl }: ControlPanelProp
     setHoleX(x)
     setHoleY(y)
 
-    const hole: CircularHole = {
-      id: makeHoleId(),
-      face,
-      radius,
-      x,
-      y,
-    }
-
-    onChange({
-      ...config,
-      holes: [...config.holes, hole],
-    })
+    const hole: CircularHole = { id: makeHoleId(), face, radius, x, y }
+    onChange({ ...config, holes: [...config.holes, hole] })
   }
 
+  const removeHole = (id: string) =>
+    onChange({ ...config, holes: config.holes.filter((h) => h.id !== id) })
+
   return (
-    <aside className="panel">
-      <h1>Electronics Enclosure Designer</h1>
-      <p className="panel-subtitle">Adjust dimensions, add face holes, and export a printable STL.</p>
+    <aside className="sidebar">
+      {/* ── Scrollable body ── */}
+      <div className="sidebar-body">
+        {/* Header */}
+        <div className="sidebar-header">
+          <h1>Enclosure Designer</h1>
+          <p>Parametric electronics enclosures, ready to print.</p>
+        </div>
 
-      <section className="panel-section">
-        <h2>Model</h2>
+        {/* Dimensions */}
+        <div className="section-group">
+          <p className="section-label">Dimensions</p>
 
-        <label>
-          Name
-          <input
-            value={config.name}
-            onChange={(event) => onChange({ ...config, name: event.target.value })}
-          />
-        </label>
-
-        <label>
-          Enclosure Type
-          <select
-            value={config.type}
-            onChange={(event) =>
-              onChange({ ...config, type: event.target.value as EnclosureConfig['type'] })
-            }
-          >
-            <option value="plain">Plain box</option>
-            <option value="lid">Lid style</option>
-            <option value="flanged">Flanged base</option>
-          </select>
-        </label>
-
-        <div className="grid-2">
-          <label>
-            Width (mm)
-            <input
-              type="number"
-              min={40}
-              max={240}
-              value={config.width}
-              onChange={(event) => onChange({ ...config, width: Number(event.target.value) })}
-            />
+          <label className="field-label">
+            Type
+            <select
+              value={config.type}
+              onChange={(e) => onChange({ ...config, type: e.target.value as EnclosureConfig['type'] })}
+            >
+              <option value="plain">Plain box</option>
+              <option value="lid">Lid style</option>
+              <option value="flanged">Flanged base</option>
+            </select>
           </label>
 
-          <label>
-            Height (mm)
-            <input
-              type="number"
-              min={30}
-              max={180}
-              value={config.height}
-              onChange={(event) => onChange({ ...config, height: Number(event.target.value) })}
-            />
-          </label>
+          <div className="dim-grid">
+            <label className="field-label">
+              Width (mm)
+              <input
+                type="number"
+                min={40}
+                max={240}
+                value={config.width}
+                onChange={(e) => onChange({ ...config, width: Number(e.target.value) })}
+              />
+            </label>
+            <label className="field-label">
+              Height (mm)
+              <input
+                type="number"
+                min={30}
+                max={180}
+                value={config.height}
+                onChange={(e) => onChange({ ...config, height: Number(e.target.value) })}
+              />
+            </label>
+            <label className="field-label">
+              Depth (mm)
+              <input
+                type="number"
+                min={40}
+                max={240}
+                value={config.depth}
+                onChange={(e) => onChange({ ...config, depth: Number(e.target.value) })}
+              />
+            </label>
+          </div>
 
-          <label>
-            Depth (mm)
-            <input
-              type="number"
-              min={40}
-              max={240}
-              value={config.depth}
-              onChange={(event) => onChange({ ...config, depth: Number(event.target.value) })}
-            />
-          </label>
-
-          <label>
-            Wall (mm)
+          <label className="field-label">
+            Wall thickness (mm)
             <input
               type="number"
               min={1}
               max={20}
               step={0.5}
               value={config.wallThickness}
-              onChange={(event) =>
-                onChange({
-                  ...config,
-                  wallThickness: Number(event.target.value),
-                })
-              }
+              onChange={(e) => onChange({ ...config, wallThickness: Number(e.target.value) })}
             />
           </label>
         </div>
-      </section>
 
-      <section className="panel-section">
-        <h2>Face Hole Tool</h2>
+        {/* Face holes */}
+        <div className="section-group">
+          <p className="section-label">Face Holes</p>
 
-        <label>
-          Surface
-          <select
-            value={face}
-            onChange={(event) => {
-              const nextFace = event.target.value as Face
-              const nextBounds = getFaceBounds(config, nextFace)
-              const nextMaxRadius = Math.max(1, Math.min(nextBounds.xLimit, nextBounds.yLimit))
-              const nextRadius = clamp(holeRadius, 1, nextMaxRadius)
-
-              setFace(nextFace)
-              setHoleRadius(nextRadius)
-              setHoleX(clamp(holeX, -nextBounds.xLimit + nextRadius, nextBounds.xLimit - nextRadius))
-              setHoleY(clamp(holeY, -nextBounds.yLimit + nextRadius, nextBounds.yLimit - nextRadius))
-            }}
-          >
-            {faces.map((item) => (
-              <option key={item} value={item}>
-                {item}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <div className="grid-2">
-          <label>
-            Radius (mm)
-            <input
-              type="number"
-              min={1}
-              max={maxRadius}
-              step={0.5}
-              value={holeRadius}
-              onChange={(event) => {
-                const nextRadius = clamp(Number(event.target.value), 1, maxRadius)
-                setHoleRadius(nextRadius)
-                setHoleX(clamp(holeX, -bounds.xLimit + nextRadius, bounds.xLimit - nextRadius))
-                setHoleY(clamp(holeY, -bounds.yLimit + nextRadius, bounds.yLimit - nextRadius))
+          <label className="field-label">
+            Surface
+            <select
+              value={face}
+              onChange={(e) => {
+                const nextFace = e.target.value as Face
+                const nb = getFaceBounds(config, nextFace)
+                const nmr = Math.max(1, Math.min(nb.xLimit, nb.yLimit))
+                const nr = clamp(holeRadius, 1, nmr)
+                setFace(nextFace)
+                setHoleRadius(nr)
+                setHoleX(clamp(holeX, -nb.xLimit + nr, nb.xLimit - nr))
+                setHoleY(clamp(holeY, -nb.yLimit + nr, nb.yLimit - nr))
               }}
-            />
+            >
+              {faces.map((f) => <option key={f} value={f}>{f}</option>)}
+            </select>
           </label>
 
-          <label>
-            X offset (mm)
-            <input
-              type="number"
-              min={-bounds.xLimit + holeRadius}
-              max={bounds.xLimit - holeRadius}
-              value={holeX}
-              onChange={(event) =>
-                setHoleX(clamp(Number(event.target.value), -bounds.xLimit + holeRadius, bounds.xLimit - holeRadius))
-              }
-            />
-          </label>
+          <div className="hole-grid">
+            <label className="field-label">
+              Radius (mm)
+              <input
+                type="number"
+                min={1}
+                max={maxRadius}
+                step={0.5}
+                value={holeRadius}
+                onChange={(e) => {
+                  const nr = clamp(Number(e.target.value), 1, maxRadius)
+                  setHoleRadius(nr)
+                  setHoleX(clamp(holeX, -bounds.xLimit + nr, bounds.xLimit - nr))
+                  setHoleY(clamp(holeY, -bounds.yLimit + nr, bounds.yLimit - nr))
+                }}
+              />
+            </label>
+            <label className="field-label">
+              X offset (mm)
+              <input
+                type="number"
+                min={-bounds.xLimit + holeRadius}
+                max={bounds.xLimit - holeRadius}
+                value={holeX}
+                onChange={(e) =>
+                  setHoleX(clamp(Number(e.target.value), -bounds.xLimit + holeRadius, bounds.xLimit - holeRadius))
+                }
+              />
+            </label>
+            <label className="field-label">
+              Y offset (mm)
+              <input
+                type="number"
+                min={-bounds.yLimit + holeRadius}
+                max={bounds.yLimit - holeRadius}
+                value={holeY}
+                onChange={(e) =>
+                  setHoleY(clamp(Number(e.target.value), -bounds.yLimit + holeRadius, bounds.yLimit - holeRadius))
+                }
+              />
+            </label>
+          </div>
 
-          <label>
-            Y offset (mm)
-            <input
-              type="number"
-              min={-bounds.yLimit + holeRadius}
-              max={bounds.yLimit - holeRadius}
-              value={holeY}
-              onChange={(event) =>
-                setHoleY(clamp(Number(event.target.value), -bounds.yLimit + holeRadius, bounds.yLimit - holeRadius))
-              }
-            />
-          </label>
+          <button className="add-btn" onClick={addHole}>+ Add hole</button>
+
+          {config.holes.length === 0 ? (
+            <p className="hole-empty">No holes yet — add one above.</p>
+          ) : (
+            <div className="hole-tags">
+              {config.holes.map((hole) => (
+                <span key={hole.id} className="hole-tag">
+                  {hole.face} r{hole.radius} ({hole.x},{hole.y})
+                  <button onClick={() => removeHole(hole.id)} title="Remove hole">×</button>
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
-        <button onClick={addHole}>Add hole</button>
+        {/* Cloud save slot */}
+        {cloudSlot}
+      </div>
 
-        <ul className="hole-list">
-          {config.holes.length === 0 && <li>No holes yet.</li>}
-          {config.holes.map((hole) => (
-            <li key={hole.id}>
-              <span>
-                {hole.face} • r {hole.radius}mm @ ({hole.x}, {hole.y})
-              </span>
-              <button
-                className="ghost"
-                onClick={() =>
-                  onChange({
-                    ...config,
-                    holes: config.holes.filter((item) => item.id !== hole.id),
-                  })
-                }
-              >
-                Remove
-              </button>
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      {featureFlags.premiumOptions && (
-        <section className="panel-section">
-          <h2>Premium Options (Placeholder)</h2>
-          <label className="placeholder-row">
-            <input
-              type="checkbox"
-              checked={config.premium.advancedFastening}
-              onChange={(event) =>
-                onChange({
-                  ...config,
-                  premium: { ...config.premium, advancedFastening: event.target.checked },
-                })
-              }
-              disabled
-            />
-            Advanced screw/fastening configs (coming soon)
-          </label>
-          <label className="placeholder-row">
-            <input
-              type="checkbox"
-              checked={config.premium.waterproofSeal}
-              onChange={(event) =>
-                onChange({
-                  ...config,
-                  premium: { ...config.premium, waterproofSeal: event.target.checked },
-                })
-              }
-              disabled
-            />
-            Waterproof seal package (coming soon)
-          </label>
-        </section>
-      )}
-
-      {featureFlags.paidServices && (
-        <section className="panel-section">
-          <h2>Paid Services (Placeholder)</h2>
-          <label className="placeholder-row">
-            <input
-              type="checkbox"
-              checked={config.services.printing}
-              onChange={(event) =>
-                onChange({
-                  ...config,
-                  services: { ...config.services, printing: event.target.checked },
-                })
-              }
-              disabled
-            />
-            3D printing/manufacturing quote (coming soon)
-          </label>
-          <label className="placeholder-row">
-            <input
-              type="checkbox"
-              checked={config.services.delivery}
-              onChange={(event) =>
-                onChange({
-                  ...config,
-                  services: { ...config.services, delivery: event.target.checked },
-                })
-              }
-              disabled
-            />
-            Delivery & fulfilment options (coming soon)
-          </label>
-        </section>
-      )}
-
-      <button className="primary" onClick={onExportStl}>
-        Download STL
-      </button>
+      {/* ── Sticky action footer ── */}
+      <div className="action-footer">
+        <button className="primary" onClick={onExportStl}>
+          ↓ Download STL
+        </button>
+        <button className="secondary" title="Manufacturing quotes coming soon" disabled>
+          🖨 Get it printed
+        </button>
+      </div>
     </aside>
   )
 }

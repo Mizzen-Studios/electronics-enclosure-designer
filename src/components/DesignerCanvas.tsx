@@ -5,9 +5,10 @@ import { EnclosureMesh } from './EnclosureMesh'
 
 interface DesignerCanvasProps {
   config: EnclosureConfig
+  statsLabel: string
 }
 
-export function DesignerCanvas({ config }: DesignerCanvasProps) {
+export function DesignerCanvas({ config, statsLabel }: DesignerCanvasProps) {
   const largestDimension = Math.max(config.width, config.height, config.depth)
   const cameraDistance = largestDimension * 2.1
 
@@ -25,6 +26,7 @@ export function DesignerCanvas({ config }: DesignerCanvasProps) {
         <OrbitControls makeDefault />
         <Environment preset="city" />
       </Canvas>
+      <div className="stats-overlay">{statsLabel}</div>
     </div>
   )
 }

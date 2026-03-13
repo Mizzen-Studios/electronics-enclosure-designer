@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import type { User } from 'firebase/auth'
 import type { StoredModel } from '../types/enclosure'
 
@@ -30,62 +31,76 @@ export function CloudPanel({
   onDelete,
   onRefresh,
 }: CloudPanelProps) {
+  const [open, setOpen] = useState(false)
+
   return (
-    <section className="panel-section cloud-panel">
-      <h2>Cloud Save / Load</h2>
+    <div className="cloud-accordion">
+      <button className="cloud-toggle" onClick={() => setOpen((o) => !o)}>
+        <span>☁ Cloud save</span>
+        <span className={`chevron${open ? ' open' : ''}`}>▼</span>
+      </button>
 
-      {!enabled && (
-        <p className="hint">
-          Firebase is not configured. Continue without account, or add env values to enable sign-in +
-          cloud model storage.
-        </p>
-      )}
+      {open && (
+        <div className="cloud-body">
+          {!enabled && (
+            <p className="cloud-hint">
+              Firebase not configured — cloud save is disabled. Add env vars to enable.
+            </p>
+          )}
 
-      {enabled && authLoading && <p className="hint">Checking auth status…</p>}
+          {enabled && authLoading && <p className="cloud-hint">Checking auth…</p>}
 
-      {enabled && !authLoading && !user && (
-        <button className="primary" onClick={onSignIn}>
-          Sign in with Google
-        </button>
-      )}
-
-      {enabled && user && (
-        <>
-          <div className="cloud-actions">
-            <p className="hint">Signed in as {user.email ?? user.uid}</p>
-            <button onClick={onSignOut}>Sign out</button>
-          </div>
-
-          <div className="cloud-actions">
-            <button className="primary" onClick={onSave} disabled={cloudLoading}>
-              {cloudLoading ? 'Saving…' : 'Save current model'}
+          {enabled && !authLoading && !user && (
+            <button className="primary" style={{ width: '100%' }} onClick={onSignIn}>
+              Sign in with Google
             </button>
-            <button onClick={onRefresh} disabled={cloudLoading}>
-              Refresh
-            </button>
-          </div>
+          )}
 
-          <ul className="saved-model-list">
-            {models.length === 0 && <li>No saved cloud models yet.</li>}
-            {models.map((model) => (
-              <li key={model.id}>
-                <div>
-                  <strong>{model.config.name || 'Untitled model'}</strong>
-                  <p>{new Date(model.updatedAt).toLocaleString()}</p>
-                </div>
-                <div className="row-actions">
-                  <button onClick={() => onLoad(model.id)}>Load</button>
-                  <button className="ghost" onClick={() => onDelete(model.id)}>
-                    Delete
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </>
+          {enabled && user && (
+            <>
+              <div className="cloud-actions" style={{ marginTop: '0.5rem' }}>
+                <span className="cloud-user">{user.email ?? user.uid}</span>
+                <button className="secondary" style={{ marginLeft: 'auto' }} onClick={onSignOut}>
+                  Sign out
+                </button>
+              </div>
+
+              <div className="cloud-actions">
+                <button className="primary" onClick={onSave} disabled={cloudLoading} style={{ flex: 1 }}>
+                  {cloudLoading ? 'Saving…' : 'Save design'}
+                </button>
+                <button onClick={onRefresh} disabled={cloudLoading}>
+                  ↻
+                </button>
+              </div>
+
+              <ul className="saved-model-list">
+                {models.length === 0 && (
+                  <li style={{ border: 'none', background: 'none', padding: '0.2rem 0' }}>
+                    <span style={{ color: '#9ca3af', fontSize: '0.78rem' }}>No saved designs yet.</span>
+                  </li>
+                )}
+                {models.map((model) => (
+                  <li key={model.id}>
+                    <div>
+                      <strong>{model.config.name || 'Untitled'}</strong>
+                      <p>{new Date(model.updatedAt).toLocaleString()}</p>
+                    </div>
+                    <div className="row-actions">
+                      <button onClick={() => onLoad(model.id)}>Load</button>
+                      <button className="ghost" onClick={() => onDelete(model.id)}>
+                        ✕
+                      </button>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
+
+          {cloudError && <p className="error">{cloudError}</p>}
+        </div>
       )}
-
-      {cloudError && <p className="error">{cloudError}</p>}
-    </section>
+    </div>
   )
 }
