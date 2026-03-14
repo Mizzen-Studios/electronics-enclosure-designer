@@ -112,7 +112,15 @@ export function buildEnclosureMesh(config: EnclosureConfig): Mesh {
   }
 
   shell.geometry.computeVertexNormals()
-  shell.geometry.center()
+  shell.geometry.computeBoundingBox()
+
+  const bounds = shell.geometry.boundingBox
+  if (bounds) {
+    const centerX = (bounds.min.x + bounds.max.x) / 2
+    const centerZ = (bounds.min.z + bounds.max.z) / 2
+    const minY = bounds.min.y
+    shell.geometry.translate(-centerX, -minY, -centerZ)
+  }
 
   return shell
 }

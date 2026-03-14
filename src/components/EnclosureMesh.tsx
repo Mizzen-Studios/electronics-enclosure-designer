@@ -16,7 +16,12 @@ export function EnclosureMesh({ config }: EnclosureMeshProps) {
   }, [geometry])
 
   return (
-    <mesh geometry={geometry} castShadow receiveShadow>
+    <mesh
+      geometry={geometry}
+      rotation={[Math.PI / 2, 0, 0]}
+      castShadow
+      receiveShadow
+    >
       <meshStandardMaterial color="#7aa2ff" metalness={0.15} roughness={0.55} />
     </mesh>
   )
