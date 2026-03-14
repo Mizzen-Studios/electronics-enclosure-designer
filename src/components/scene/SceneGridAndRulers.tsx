@@ -53,6 +53,7 @@ export function SceneGridAndRulers({ width, depth }: SceneGridAndRulersProps) {
     <>
       <Grid
         position={[0, 0, planeZ]}
+        rotation={[Math.PI / 2, 0, 0]}
         args={[gridSize, gridSize]}
         cellSize={5}
         cellThickness={0.35}
