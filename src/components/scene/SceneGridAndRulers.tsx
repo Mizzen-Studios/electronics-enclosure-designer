@@ -46,7 +46,8 @@ export function SceneGridAndRulers({ width, height, depth }: SceneGridAndRulersP
   )
 
   const gridSize = Math.max(width, depth) * 2.8
-  const labelSize = Math.max(2.2, Math.min(width, depth) * 0.03)
+  const labelSize = Math.max(3.4, Math.min(width, depth) * 0.045)
+  const labelOutlineWidth = Math.max(0.08, labelSize * 0.06)
 
   return (
     <>
@@ -75,10 +76,12 @@ export function SceneGridAndRulers({ width, height, depth }: SceneGridAndRulersP
       ))}
       <Text
         position={[0, rulerY, widthLineZ + 5]}
-        color="#3730a3"
+        color="#312e81"
         anchorX="center"
         anchorY="middle"
         fontSize={labelSize}
+        outlineColor="#ffffff"
+        outlineWidth={labelOutlineWidth}
       >
         W {Math.round(width)} mm
       </Text>
@@ -96,10 +99,12 @@ export function SceneGridAndRulers({ width, height, depth }: SceneGridAndRulersP
       <Text
         position={[depthLineX - 5, rulerY, 0]}
         rotation={[-Math.PI / 2, 0, Math.PI / 2]}
-        color="#3730a3"
+        color="#312e81"
         anchorX="center"
         anchorY="middle"
         fontSize={labelSize}
+        outlineColor="#ffffff"
+        outlineWidth={labelOutlineWidth}
       >
         D {Math.round(depth)} mm
       </Text>
