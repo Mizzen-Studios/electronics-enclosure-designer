@@ -2,12 +2,14 @@ import { Canvas, useThree } from '@react-three/fiber'
 import { Environment, OrbitControls } from '@react-three/drei'
 import { useEffect, useMemo } from 'react'
 import type { EnclosureConfig } from '../types/enclosure'
+import type { MeasurementUnit } from '../types/units'
 import { EnclosureMesh } from './EnclosureMesh'
 import { OrientationWidget } from './scene/OrientationWidget'
 import { SceneGridAndRulers } from './scene/SceneGridAndRulers'
 
 interface DesignerCanvasProps {
   config: EnclosureConfig
+  unit: MeasurementUnit
   statsLabel: string
   onCaptureReady?: (capture: (() => string | null) | null) => void
 }
@@ -43,7 +45,7 @@ function CaptureBridge({ onCaptureReady }: CaptureBridgeProps) {
   return null
 }
 
-export function DesignerCanvas({ config, statsLabel, onCaptureReady }: DesignerCanvasProps) {
+export function DesignerCanvas({ config, unit, statsLabel, onCaptureReady }: DesignerCanvasProps) {
   const sceneMetrics = useMemo(() => {
     const largestDimension = Math.max(config.width, config.height, config.depth)
     return {
@@ -73,7 +75,7 @@ export function DesignerCanvas({ config, statsLabel, onCaptureReady }: DesignerC
         />
 
         <EnclosureMesh config={config} />
-        <SceneGridAndRulers width={config.width} height={config.height} depth={config.depth} />
+        <SceneGridAndRulers width={config.width} height={config.height} depth={config.depth} unit={unit} />
 
         <CaptureBridge onCaptureReady={onCaptureReady} />
         <OrbitControls makeDefault enableDamping dampingFactor={0.08} />

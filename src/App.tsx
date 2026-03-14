@@ -10,6 +10,7 @@ import { useAuth } from './hooks/useAuth'
 import { useCloudModels } from './hooks/useCloudModels'
 import { OrderSuccess } from './pages/OrderSuccess'
 import type { EnclosureConfig } from './types/enclosure'
+import type { MeasurementUnit } from './types/units'
 import { getErrorMessage } from './utils/error'
 import { exportModelAsStl } from './utils/exportStl'
 import { sanitizeConfig } from './utils/sanitize'
@@ -17,6 +18,7 @@ import { sanitizeConfig } from './utils/sanitize'
 function App() {
   const [config, setConfig] = useState<EnclosureConfig>(defaultModel)
   const [buyModalOpen, setBuyModalOpen] = useState(false)
+  const [measurementUnit, setMeasurementUnit] = useState<MeasurementUnit>('mm')
   const [checkoutPreviewImage, setCheckoutPreviewImage] = useState<string | null>(null)
   const [capturePreview, setCapturePreview] = useState<(() => string | null) | null>(null)
   const [currentRoute, setCurrentRoute] = useState(() => window.location.hash.slice(1) || 'home')
@@ -183,6 +185,7 @@ function App() {
           onChange={applyConfig}
           onExportStl={handleExportStl}
           onBuy={openCheckoutModal}
+          onUnitChange={setMeasurementUnit}
           cloudSlot={cloudSlot}
           accountTier={account.tier}
           accountLoading={account.loading}
@@ -192,6 +195,7 @@ function App() {
         <div className="viewport-column">
           <DesignerCanvas
             config={previewConfig}
+            unit={measurementUnit}
             statsLabel={statsLabel}
             onCaptureReady={handleCaptureReady}
           />

@@ -1,14 +1,13 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { ChevronDown, Download, Plus, ShoppingCart, X } from 'lucide-react'
 import type { AccountTier } from '../types/account'
 import type { CircularHole, EnclosureConfig, Face } from '../types/enclosure'
+import type { MeasurementUnit } from '../types/units'
+import { MM_PER_INCH } from '../types/units'
 import { getFaceBounds } from '../utils/enclosureBounds'
 
-const MM_PER_INCH = 25.4
 const MOBILE_MEDIA_QUERY = '(max-width: 768px)'
-
-type Unit = 'mm' | 'in'
 type CollapsibleSectionKey = 'dimensions' | 'faceHoles' | 'premium'
 type SectionOpenState = Record<CollapsibleSectionKey, boolean>
 
@@ -17,6 +16,7 @@ interface ControlPanelProps {
   onChange: (next: EnclosureConfig) => void
   onExportStl: () => void
   onBuy: () => void
+  onUnitChange: (unit: MeasurementUnit) => void
   cloudSlot?: ReactNode
   accountTier: AccountTier
   accountLoading: boolean
@@ -87,17 +87,22 @@ export function ControlPanel({
   onChange,
   onExportStl,
   onBuy,
+  onUnitChange,
   cloudSlot,
   accountTier,
   accountLoading,
   accountError,
 }: ControlPanelProps) {
-  const [unit, setUnit] = useState<Unit>('mm')
+  const [unit, setUnit] = useState<MeasurementUnit>('mm')
   const [face, setFace] = useState<Face>('front')
   const [holeRadius, setHoleRadius] = useState(4)
   const [holeX, setHoleX] = useState(0)
   const [holeY, setHoleY] = useState(0)
   const [sectionsOpen, setSectionsOpen] = useState<SectionOpenState>(() => getDefaultSectionOpenState())
+
+  useEffect(() => {
+    onUnitChange(unit)
+  }, [onUnitChange, unit])
 
   const canEditPremium = accountTier === 'paid'
 

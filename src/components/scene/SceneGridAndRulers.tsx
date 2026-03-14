@@ -1,10 +1,13 @@
 import { Grid, Line, Text } from '@react-three/drei'
 import { useMemo } from 'react'
+import type { MeasurementUnit } from '../../types/units'
+import { MM_PER_INCH } from '../../types/units'
 
 interface SceneGridAndRulersProps {
   width: number
   height: number
   depth: number
+  unit: MeasurementUnit
 }
 
 interface Tick {
@@ -20,29 +23,47 @@ function buildTicks(start: number, end: number, step: number, makeTick: (value: 
   return ticks
 }
 
-export function SceneGridAndRulers({ width, depth }: SceneGridAndRulersProps) {
+function formatDimensionLabel(valueMm: number, unit: MeasurementUnit): string {
+  if (unit === 'mm') {
+    return String(Math.round(valueMm))
+  }
+
+  return (valueMm / MM_PER_INCH).toFixed(2).replace(/\.00$/, '')
+}
+
+export function SceneGridAndRulers({ width, depth, unit }: SceneGridAndRulersProps) {
   const planeZ = 0
   const rulerZ = planeZ + 0.05
   const widthLineY = depth / 2 + 12
   const depthLineX = -width / 2 - 12
   const tickLength = 2
 
+  const tickStepMm = unit === 'mm' ? 10 : MM_PER_INCH
+
   const widthTicks = useMemo(
-    () =>
-      buildTicks(-Math.floor(width / 2), Math.floor(width / 2), 10, (value) => ({
+    () => {
+      const start = -Math.floor((width / 2) / tickStepMm) * tickStepMm
+      const end = Math.floor((width / 2) / tickStepMm) * tickStepMm
+
+      return buildTicks(start, end, tickStepMm, (value) => ({
         start: [value, widthLineY - tickLength, rulerZ] as [number, number, number],
         end: [value, widthLineY + tickLength, rulerZ] as [number, number, number],
-      })),
-    [rulerZ, tickLength, width, widthLineY],
+      }))
+    },
+    [rulerZ, tickLength, tickStepMm, width, widthLineY],
   )
 
   const depthTicks = useMemo(
-    () =>
-      buildTicks(-Math.floor(depth / 2), Math.floor(depth / 2), 10, (value) => ({
+    () => {
+      const start = -Math.floor((depth / 2) / tickStepMm) * tickStepMm
+      const end = Math.floor((depth / 2) / tickStepMm) * tickStepMm
+
+      return buildTicks(start, end, tickStepMm, (value) => ({
         start: [depthLineX - tickLength, value, rulerZ] as [number, number, number],
         end: [depthLineX + tickLength, value, rulerZ] as [number, number, number],
-      })),
-    [depth, depthLineX, rulerZ, tickLength],
+      }))
+    },
+    [depth, depthLineX, rulerZ, tickLength, tickStepMm],
   )
 
   const gridSize = Math.max(width, depth) * 2.8
@@ -84,7 +105,7 @@ export function SceneGridAndRulers({ width, depth }: SceneGridAndRulersProps) {
         outlineColor="#ffffff"
         outlineWidth={labelOutlineWidth}
       >
-        W {Math.round(width)} mm
+        W {formatDimensionLabel(width, unit)} {unit}
       </Text>
 
       <Line
@@ -107,7 +128,7 @@ export function SceneGridAndRulers({ width, depth }: SceneGridAndRulersProps) {
         outlineColor="#ffffff"
         outlineWidth={labelOutlineWidth}
       >
-        D {Math.round(depth)} mm
+        D {formatDimensionLabel(depth, unit)} {unit}
       </Text>
     </>
   )
