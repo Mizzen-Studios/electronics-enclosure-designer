@@ -62,6 +62,7 @@ export function DesignerCanvas({ config, statsLabel, onCaptureReady }: DesignerC
         camera={{
           position: [sceneMetrics.cameraDistance, sceneMetrics.cameraDistance, sceneMetrics.cameraDistance],
           fov: 40,
+          up: [0, 0, 1],
         }}
       >
         <ambientLight intensity={0.45} />

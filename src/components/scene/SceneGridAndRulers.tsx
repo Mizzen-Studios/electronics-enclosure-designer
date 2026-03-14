@@ -76,6 +76,7 @@ export function SceneGridAndRulers({ width, height, depth }: SceneGridAndRulersP
       ))}
       <Text
         position={[0, rulerY, widthLineZ + 5]}
+        rotation={[-Math.PI / 2, 0, 0]}
         color="#312e81"
         anchorX="center"
         anchorY="middle"
