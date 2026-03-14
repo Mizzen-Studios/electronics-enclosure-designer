@@ -136,8 +136,19 @@ function App() {
     }
   }, [signOut])
 
+  const handleCaptureReady = useCallback((capture: (() => string | null) | null) => {
+    setCapturePreview(() => capture)
+  }, [])
+
   const openCheckoutModal = useCallback(() => {
-    const previewImage = capturePreview?.() ?? null
+    let previewImage: string | null = null
+
+    try {
+      previewImage = capturePreview?.() ?? null
+    } catch {
+      previewImage = null
+    }
+
     setCheckoutPreviewImage(previewImage)
     setBuyModalOpen(true)
   }, [capturePreview])
@@ -197,7 +208,7 @@ function App() {
           <DesignerCanvas
             config={previewConfig}
             statsLabel={statsLabel}
-            onCaptureReady={setCapturePreview}
+            onCaptureReady={handleCaptureReady}
           />
         </div>
       </div>
